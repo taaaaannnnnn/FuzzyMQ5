@@ -1,0 +1,5 @@
+Part,Rule_ID,IF_Condition,THEN_Consequent,Status
+Part 1b (Trend Reversal),Reversal_Rule_1,Trend IS SIDEWAYS AND Daily_Rejection_Candle_Detected IS YES AND H1_Breakout_Strength IS STRONG,Trend_Reversal IS CLEARLY_FORMING,Confirmed
+Part 1b (Trend Reversal),Reversal_Rule_2,Trend IS SIDEWAYS AND Daily_Rejection_Candle_Detected IS YES AND H1_Breakout_Strength IS WEAK,Trend_Reversal IS WEAKLY_FORMING,Confirmed
+Part 1b (Trend Reversal),Reversal_Rule_3,Trend IS SIDEWAYS AND Daily_Rejection_Candle_Detected IS YES AND H1_Breakout_Strength IS NONE,Trend_Reversal IS NOT_FORMED,Confirmed
+Part 1b (Trend Reversal),Reversal_Rule_4,Trend IS SIDEWAYS AND Daily_Rejection_Candle_Detected IS NO,Trend_Reversal IS IN_OLD_TREND,Confirmed
