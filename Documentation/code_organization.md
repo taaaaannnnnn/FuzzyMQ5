@@ -1,49 +1,54 @@
-# Code Organization (v7.50)
+# Code Organization (v0.90 Beta)
 
 ## Directory Structure
 
 `MQL5/Experts/FuzzyLogicBasedOnTan/`
-├── `FuzzyLogicBasedOnTan.mq5` (Main Entry Point - Controller)
+├── `FuzzyLogicBasedOnTan.mq5` (Main Entry Point - Clean Controller)
+├── `project_env.json` (Environment Configuration - Paths & Compiler)
+├── `build.bat` (Windows Build Launcher)
+├── `build.ps1` (PowerShell Build Logic - reads from JSON)
 ├── `Includes/`
-│   ├── `Fuzzy/` (Core Logic - Native Arrays, No StdLib Dependency)
-│   │   ├── `FuzzySet.mqh`
-│   │   ├── `FuzzyVariable.mqh`
-│   │   ├── `FuzzyRule.mqh`
-│   │   └── `FuzzySystem.mqh`
+│   ├── `Fuzzy/`
+│   │   └── `FuzzyAdapter.mqh` (Wraps MQL5 Standard Library for stability)
 │   ├── `GUI/`
-│   │   └── `GUIPanel.mqh` (Light Theme, Dual Dropdowns, Anti-Scroll)
+│   │   ├── `GUIPanel.mqh` (Core UI Rendering)
+│   │   └── `GUIAdapter.mqh` (Maps UI states to Fuzzy values)
 │   └── `Utils/`
-│       └── `Logger.mqh` (Simple Console Logging)
+│       ├── `Logger.mqh` (Standardized Logging)
+│       └── `Definitions.mqh` (Centralized Constants & Variable Names)
 └── `Documentation/`
-    ├── `rules.csv` (Official Rules)
-    ├── `lessons_learned.md` (Technical Knowledge Base)
-    ├── `algorithm.md`
+    ├── `rules.csv` (Official Confirmed Rules)
+    ├── `lessons_learned.md` (Technical Knowledge Base & API Docs)
+    ├── `algorithm.md` (Mamdani Methodology)
     └── `code_organization.md` (This file)
 
 ## Module Responsibilities
 
 ### 1. Main Controller (`FuzzyLogicBasedOnTan.mq5`)
-*   **Role:** Orchestrator.
+*   **Role:** High-level Orchestrator.
 *   **Tasks:** 
-    *   Initializes Systems (Trend, Reversal) and GUI.
-    *   Handles `OnChartEvent` to trigger logic immediately upon UI interaction.
-    *   Maps raw UI inputs to Fuzzy variables.
-    *   Displays final output using `Comment()`.
+    *   Initializes Adapters.
+    *   Delegates Event handling to `GUIAdapter`.
+    *   Triggers logic calculation without knowing internal Library details.
 
-### 2. GUI Module (`GUIPanel.mqh`)
+### 2. Adapters (Isolation Layer)
+*   **`FuzzyAdapter.mqh`**: 
+    *   Isolates the complex MQL5 Standard Fuzzy Library.
+    *   Manages internal state for crisp values (since `CFuzzyVariable` doesn't).
+    *   Provides safe, string-based API for setting inputs and getting results.
+*   **`GUIAdapter.mqh`**:
+    *   Converts human-readable UI states (YES/NO, STRONG/WEAK) into numerical Fuzzy inputs.
+    *   Centralizes the "Business Logic" of mapping UI to Logic.
+
+### 3. GUI Module (`GUIPanel.mqh`)
 *   **Version:** 7.50 (Overlay/Occlusion Mode)
-*   **Features:**
-    *   **Dual Dropdowns:** "Daily Rejection" and "H1 Breakout" use custom dropdowns.
-    *   **Occlusion:** Hides lower elements when a dropdown expands to prevent visual overlap.
-    *   **Static Objects:** Uses `CChartObject...` members directly (no pointers) for stability.
-    *   **Light Theme:** Professional look (Black text on Light Green/Gray).
-    *   **UX:** Anti-scroll dragging mechanism.
+*   **Features:** Dual Dropdowns, Occlusion logic, Drag & Drop with Anti-Scroll.
+*   **Static Nature:** Uses static `CChartObject` members for maximum stability.
 
-### 3. Fuzzy Core (`Includes/Fuzzy/`)
-*   **Philosophy:** "Zero Dependency". Uses native MQL5 dynamic arrays (`[]` + `ArrayResize`) instead of `CArrayObj` to avoid compiler path issues.
-*   **Components:** 
-    *   `FuzzySet`: Membership functions & Centroid calculation.
-    *   `FuzzySystem`: Inference engine using Mamdani-like logic & Height Method defuzzification.
+### 4. Fuzzy Core (MQL5 Standard Library)
+*   **Path:** `<Math\Fuzzy\mamdanifuzzysystem.mqh>`
+*   **Usage:** Leverages the official MetaQuotes implementation for Mamdani inference.
 
-### 4. Utilities
-*   **`Logger.mqh`**: Centralized logging helper to keep Main EA clean.
+### 5. Utilities & Config
+*   **`Definitions.mqh`**: The **Source of Truth** for all strings and numbers. No magic values allowed elsewhere.
+*   **`project_env.json`**: Decouples the source code from the local machine environment.
