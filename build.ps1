@@ -1,10 +1,17 @@
 <#
-    MQL5 Build Script for FuzzyLogicBasedOnTan
+    MQL5 Build Script for FuzzyLogicBasedOnTan (Dynamic Config Version)
     Usage: .\build.ps1
 #>
 
-# --- CONFIGURATION ---
-$CompilerPath = "C:\Program Files\MetaTrader 5\metaeditor64.exe"
+# --- LOAD CONFIG ---
+$ConfigPath = Join-Path $PSScriptRoot "project_env.json"
+if (Test-Path $ConfigPath) {
+    $Config = Get-Content $ConfigPath | ConvertFrom-Json
+    $CompilerPath = $Config.METAEDITOR_EXE
+} else {
+    $CompilerPath = "C:\Program Files\MetaTrader 5\metaeditor64.exe"
+}
+
 $TargetFile   = "FuzzyLogicBasedOnTan.mq5"
 $LogFile      = "compile.log"
 
@@ -16,7 +23,7 @@ $FullPathLog    = Join-Path $ScriptDir $LogFile
 # --- VALIDATION ---
 if (-not (Test-Path $CompilerPath)) {
     Write-Host "Error: MetaEditor not found at: $CompilerPath" -ForegroundColor Red
-    Write-Host "Please edit build.ps1 to set the correct path."
+    Write-Host "Please edit project_env.json to set the correct path."
     exit 1
 }
 
@@ -31,7 +38,7 @@ if (Test-Path $FullPathLog) {
 }
 
 # --- COMPILATION ---
-Write-Host "Compiling [$TargetFile]..." -ForegroundColor Cyan
+Write-Host "Compiling [$TargetFile] using $CompilerPath..." -ForegroundColor Cyan
 
 $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
 $StartInfo.FileName = $CompilerPath
@@ -45,7 +52,6 @@ if (Test-Path $FullPathLog) {
     Get-Content $FullPathLog
     Write-Host "------------------------" -ForegroundColor Gray
     
-    # Check for success pattern in log (MetaEditor doesn't always return useful exit codes)
     $LogContent = Get-Content $FullPathLog -Raw
     if ($LogContent -match "0 errors") {
         Write-Host "BUILD SUCCESSFUL" -ForegroundColor Green

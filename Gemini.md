@@ -12,8 +12,9 @@ Whenever a new session begins or context needs to be refreshed, follow these ste
 
 ## 1. Context Retrieval
 Thoroughly review the following resources in order:
-1.  **This File (`Gemini.md`):** For global mandates and coding standards.
-2.  **Lessons Learned (`Documentation/lessons_learned.md`):** To avoid repeating past technical errors (syntax, library conflicts).
+1.  **Environment Config (`project_env.json`):** Read this first to locate Terminal and Include paths.
+2.  **This File (`Gemini.md`):** For global mandates and coding standards.
+3.  **Lessons Learned (`Documentation/lessons_learned.md`):** To avoid repeating past technical errors.
 3.  **Project State:** Read `Documentation/code_organization.md` and the latest log in `Logs/`.
 4.  **Logic & Rules:** Read `Documentation/rules.csv` for confirmed trading logic.
 
