@@ -192,8 +192,9 @@ void InitReversalSystem()
    // U3: Follow - No Wick + Strong Bull -> Moderate Up
    m_reversal_system.AddRule(up + "(Daily_Lower_Wick is NONE) and (H1_Bull_Break is STRONG) then (Trend_Reversal is MODERATE_UP)");
 
-   // U_C1: Counter - Strong Wick Upper + Strong Bear -> Weak Down
-   m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is STRONG) then (Trend_Reversal is WEAK_DOWN)");
+   // U_C1: Counter - Strong Wick Upper + Strong Bear -> MODERATE DOWN (Was WEAK/STARTING)
+   // Increased impact to handle Expanding candles better
+   m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is STRONG) then (Trend_Reversal is MODERATE_DOWN)");
    // U_C2: Counter - Strong Wick Upper + Weak Bear -> Starting Down
    m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is WEAK) then (Trend_Reversal is STARTING_DOWN)");
    // U_C3 REMOVED: Prevent double punishment. Friction rule handles the wick impact.
@@ -217,8 +218,8 @@ void InitReversalSystem()
    // D3: Follow - No Wick + Strong Bear -> Moderate Down
    m_reversal_system.AddRule(dn + "(Daily_Upper_Wick is NONE) and (H1_Bear_Break is STRONG) then (Trend_Reversal is MODERATE_DOWN)");
 
-   // D_C1: Counter - Strong Wick Lower + Strong Bull -> Weak Up
-   m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is STRONG) then (Trend_Reversal is WEAK_UP)");
+   // D_C1: Counter - Strong Wick Lower + Strong Bull -> MODERATE UP (Was WEAK/STARTING)
+   m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is STRONG) then (Trend_Reversal is MODERATE_UP)");
    // D_C2: Counter - Strong Wick Lower + Weak Bull -> Starting Up
    m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is WEAK) then (Trend_Reversal is STARTING_UP)");
    // D_C3 REMOVED
