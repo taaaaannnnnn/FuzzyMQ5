@@ -1,19 +1,23 @@
 Category,Variable,Term_Label,Shape_Type,Point_A,Point_B,Point_C,Point_D,Weight_or_Note
-Input,Trend,SIDEWAYS,Trapezoid,40,50,50,60,Simulated Input
-Input,Daily_Rejection,NO,Trapezoid,0,0,0,0.1,No Rejection Candle
-Input,Daily_Rejection,YES,Trapezoid,0.9,1,1,1,Pinbar/Engulfing Detected
-Input,H1_Breakout,NONE,Trapezoid,0,0,20,30,Price ranging
-Input,H1_Breakout,WEAK,Trapezoid,30,40,60,70,Weak breakout momentum
-Input,H1_Breakout,STRONG,Trapezoid,70,80,100,100,Strong impulsive candle
+Input,Trend,BEARISH,Trapezoid,0,0,30,40,Downtrend Context
+Input,Trend,SIDEWAYS,Trapezoid,40,50,50,60,Ranging Context
+Input,Trend,BULLISH,Trapezoid,60,70,100,100,Uptrend Context
+Input,Daily_Upper_Wick,NONE,Trapezoid,0,0,20,30,No Upper Shadow
+Input,Daily_Upper_Wick,STRONG,Trapezoid,60,70,100,100,Long Upper Shadow
+Input,Daily_Lower_Wick,NONE,Trapezoid,0,0,20,30,No Lower Shadow
+Input,Daily_Lower_Wick,STRONG,Trapezoid,60,70,100,100,Long Lower Shadow
+Input,H1_Breakout,BEARISH_STRONG,Trapezoid,0,0,15,25,Big Red Candle
+Input,H1_Breakout,BEARISH_WEAK,Trapezoid,25,35,35,45,Small Red Candle
+Input,H1_Breakout,NONE,Trapezoid,45,50,50,55,Doji / Indecision
+Input,H1_Breakout,BULLISH_WEAK,Trapezoid,55,65,65,75,Small Green Candle
+Input,H1_Breakout,BULLISH_STRONG,Trapezoid,75,85,100,100,Big Green Candle
 ,,,,,,,,
-Output,Trend_Reversal,IN_OLD_TREND,Trapezoid,0,0,5,10,"Absolute Minimum (Daily=NO)"
-Output,Trend_Reversal,NOT_FORMED,Trapezoid,10,20,20,30,"Target ~20 (Daily=YES, H1=NONE)"
-Output,Trend_Reversal,STARTING,Trapezoid,25,35,35,45,"Target ~35 (Between Not & Weak)"
-Output,Trend_Reversal,WEAKLY_FORMING,Trapezoid,40,50,50,60,"Target ~50 (Daily=YES, H1=WEAK)"
-Output,Trend_Reversal,MODERATELY_FORMING,Trapezoid,60,70,70,80,"Target ~70 (Between Weak & Clear)"
-Output,Trend_Reversal,CLEARLY_FORMING,Trapezoid,75,85,100,100,"Target ~90 (Daily=YES, H1=STRONG)"
-,,,,,,,,
-Rule,Reversal_System,Rule_1,IF-THEN,"Trend=SIDEWAYS & Daily=YES & H1=STRONG","THEN Reversal=CLEARLY_FORMING",,,Weight: 1.0
-Rule,Reversal_System,Rule_2,IF-THEN,"Trend=SIDEWAYS & Daily=YES & H1=WEAK","THEN Reversal=WEAKLY_FORMING",,,Weight: 0.8
-Rule,Reversal_System,Rule_3,IF-THEN,"Trend=SIDEWAYS & Daily=YES & H1=NONE","THEN Reversal=NOT_FORMED",,,Weight: 1.0
-Rule,Reversal_System,Rule_4,IF-THEN,"Trend=SIDEWAYS & Daily=NO","THEN Reversal=IN_OLD_TREND",,,Weight: 1.0
+Output,Trend_Reversal,CLEARLY_DOWN,Trapezoid,-100,-100,-85,-75,Target -90 to -95
+Output,Trend_Reversal,MODERATE_DOWN,Trapezoid,-75,-65,-55,-45,Target -50 to -60
+Output,Trend_Reversal,WEAK_DOWN,Trapezoid,-50,-40,-40,-30,Target -33 to -40
+Output,Trend_Reversal,STARTING_DOWN,Trapezoid,-30,-20,-20,-10,Target -13 to -15
+Output,Trend_Reversal,NOT_FORMED,Trapezoid,-10,0,0,10,Target 0 (+/- 3)
+Output,Trend_Reversal,STARTING_UP,Trapezoid,10,20,20,30,Target +13 to +15
+Output,Trend_Reversal,WEAK_UP,Trapezoid,30,40,40,50,Target +33 to +40
+Output,Trend_Reversal,MODERATE_UP,Trapezoid,45,55,65,75,Target +50 to +60
+Output,Trend_Reversal,CLEARLY_UP,Trapezoid,75,85,100,100,Target +90 to +95

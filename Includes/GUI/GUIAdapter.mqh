@@ -9,6 +9,18 @@ class GUIAdapter : public CObject
 {
 private:
    GUIPanel m_panel;
+   
+   double StrengthToVal(ENUM_STRENGTH s) {
+      if(s==STR_STRONG) return VAL_STRENGTH_STRONG;
+      if(s==STR_WEAK)   return VAL_STRENGTH_WEAK;
+      return VAL_STRENGTH_NONE;
+   }
+   
+   string StrengthToStr(ENUM_STRENGTH s) {
+      if(s==STR_STRONG) return "STRONG";
+      if(s==STR_WEAK)   return "WEAK";
+      return "NONE";
+   }
 
 public:
    void Create(int x, int y) { m_panel.Create(x, y); }
@@ -18,20 +30,31 @@ public:
       return m_panel.OnEvent(id, lparam, dparam, sparam); 
    }
 
-   // Business Logic Getters
-   double GetDailyRejectionValue() 
-   { 
-      return m_panel.getDailyRejectionDetected() ? VAL_BOOL_TRUE : VAL_BOOL_FALSE; 
+   // --- Business Logic Getters ---
+
+   double GetTrendValue() {
+      ENUM_TREND_TYPE t = m_panel.getTrend();
+      if(t == TR_BEARISH) return VAL_TREND_BEARISH;
+      if(t == TR_BULLISH) return VAL_TREND_BULLISH;
+      return VAL_TREND_SIDEWAYS;
    }
    
-   double GetH1BreakoutValue() 
-   {
-      int val = (int)m_panel.getH1BreakoutStrength();
-      if(val == 1) return VAL_STRENGTH_WEAK;   // Mapped from Definitions
-      if(val == 2) return VAL_STRENGTH_STRONG; // Mapped from Definitions
-      return VAL_STRENGTH_NONE;
+   double GetUpperWickValue() { return StrengthToVal(m_panel.getWickUp()); }
+   double GetLowerWickValue() { return StrengthToVal(m_panel.getWickLo()); }
+   
+   double GetH1BearValue()    { return StrengthToVal(m_panel.getH1Bear()); }
+   double GetH1BullValue()    { return StrengthToVal(m_panel.getH1Bull()); }
+   
+   // Status Strings
+   string GetTrendStatus() { 
+      ENUM_TREND_TYPE t = m_panel.getTrend();
+      if(t==TR_BEARISH) return "BEARISH";
+      if(t==TR_BULLISH) return "BULLISH";
+      return "SIDEWAYS";
    }
    
-   string GetH1BreakoutStatus() { return EnumToString(m_panel.getH1BreakoutStrength()); }
-   string GetDailyRejectionStatus() { return m_panel.getDailyRejectionDetected() ? "YES" : "NO"; }
+   string GetUpperWickStatus() { return StrengthToStr(m_panel.getWickUp()); }
+   string GetLowerWickStatus() { return StrengthToStr(m_panel.getWickLo()); }
+   string GetH1BearStatus()    { return StrengthToStr(m_panel.getH1Bear()); }
+   string GetH1BullStatus()    { return StrengthToStr(m_panel.getH1Bull()); }
 };

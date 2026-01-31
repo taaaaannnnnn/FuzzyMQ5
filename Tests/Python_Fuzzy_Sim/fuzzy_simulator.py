@@ -14,7 +14,7 @@ from skfuzzy import control as ctrl
 
 def create_fuzzy_system():
     # --- Inputs ---
-    trend = ctrl.Antecedent(np.arange(0, 101, 1), 'trend')
+    # trend = ctrl.Antecedent(np.arange(0, 101, 1), 'trend') # Removed to align with MQL5
     wick_upper = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_upper')
     wick_lower = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_lower')
     break_up   = ctrl.Antecedent(np.arange(0, 101, 1), 'break_up')
@@ -24,7 +24,7 @@ def create_fuzzy_system():
     reversal = ctrl.Consequent(np.arange(-100, 101, 1), 'reversal')
 
     # --- Membership Functions ---
-    trend['SIDEWAYS'] = fuzz.trapmf(trend.universe, [40, 50, 50, 60])
+    # trend['SIDEWAYS'] = fuzz.trapmf(trend.universe, [40, 50, 50, 60])
 
     for comp in [wick_upper, wick_lower, break_up, break_down]:
         comp['NONE']   = fuzz.trapmf(comp.universe, [0, 0, 20, 30])
@@ -44,19 +44,19 @@ def create_fuzzy_system():
     # --- Rules ---
     rules = []
 
-    # Buy Rules (Include Trend like in MQL5)
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lower['STRONG'] & break_up['STRONG'], reversal['CLEARLY_UP']))
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lower['STRONG'] & break_up['WEAK'],   reversal['WEAK_UP']))
+    # Buy Rules (Aligned with MQL5 - removed trend condition)
+    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['STRONG'], reversal['CLEARLY_UP']))
+    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['WEAK'],   reversal['WEAK_UP']))
 
     # Sell Rules
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_upper['STRONG'] & break_down['STRONG'], reversal['CLEARLY_DOWN']))
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_upper['STRONG'] & break_down['WEAK'],   reversal['WEAK_DOWN']))
+    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['STRONG'], reversal['CLEARLY_DOWN']))
+    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['WEAK'],   reversal['WEAK_DOWN']))
 
     # Rule 3: Confirmed Rejection but No Momentum (Daily=YES, H1=NONE) -> NOT_FORMED
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lower['STRONG'] & break_up['NONE'],   reversal['NOT_FORMED']))
-    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_upper['STRONG'] & break_down['NONE'], reversal['NOT_FORMED']))
+    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['NONE'],   reversal['NOT_FORMED']))
+    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['NONE'], reversal['NOT_FORMED']))
 
-    # Neutral Rules
+    # Neutral Rules (No Change)
     rules.append(ctrl.Rule(wick_upper['NONE'] & wick_lower['NONE'], reversal['NOT_FORMED']))
     rules.append(ctrl.Rule(wick_upper['STRONG'] & wick_lower['STRONG'], reversal['NOT_FORMED'])) # Conflict = Neutral
 
@@ -77,22 +77,22 @@ def run_console_demo():
         {
             "name": "SCENARIO 1: Strong Buy Setup",
             "desc": "Sideways + Strong Lower Wick + Strong Break Up",
-            "inputs": {'trend': 50, 'wick_upper': 10, 'wick_lower': 90, 'break_up': 90, 'break_down': 10}
+            "inputs": {'wick_upper': 10, 'wick_lower': 90, 'break_up': 90, 'break_down': 10}
         },
         {
             "name": "SCENARIO 2: Weak Sell Setup",
             "desc": "Sideways + Strong Upper Wick + Weak Break Down",
-            "inputs": {'trend': 50, 'wick_upper': 90, 'wick_lower': 10, 'break_up': 10, 'break_down': 50}
+            "inputs": {'wick_upper': 90, 'wick_lower': 10, 'break_up': 10, 'break_down': 50}
         },
         {
             "name": "SCENARIO 3: No Momentum (Neutral)",
             "desc": "Sideways + Strong Lower Wick + No Breakout",
-            "inputs": {'trend': 50, 'wick_upper': 10, 'wick_lower': 90, 'break_up': 10, 'break_down': 10}
+            "inputs": {'wick_upper': 10, 'wick_lower': 90, 'break_up': 10, 'break_down': 10}
         },
         {
             "name": "SCENARIO 4: No Signal",
             "desc": "Sideways + No Wicks + Strong Break Up (Ignored)",
-            "inputs": {'trend': 50, 'wick_upper': 10, 'wick_lower': 10, 'break_up': 90, 'break_down': 10}
+            "inputs": {'wick_upper': 10, 'wick_lower': 10, 'break_up': 90, 'break_down': 10}
         }
     ]
 
@@ -147,7 +147,7 @@ class FuzzyApp:
             "STRONG": 90
         }
         
-        self.var_trend = tk.StringVar(value="SIDEWAYS")
+        # self.var_trend = tk.StringVar(value="SIDEWAYS")
         self.var_w_up  = tk.StringVar(value="NONE")
         self.var_w_low = tk.StringVar(value="NONE")
         self.var_b_up  = tk.StringVar(value="NONE")
@@ -172,8 +172,8 @@ class FuzzyApp:
         ttk.Label(control_frame, text="MQL5 Dashboard Inputs", font=("Segoe UI", 16, "bold")).pack(pady=(0, 20))
         
         # Input 1: Trend
-        self.create_dropdown(control_frame, "Trend Context", self.var_trend, ["SIDEWAYS"])
-        ttk.Separator(control_frame, orient='horizontal').pack(fill='x', pady=15)
+        # self.create_dropdown(control_frame, "Trend Context", self.var_trend, ["SIDEWAYS"])
+        # ttk.Separator(control_frame, orient='horizontal').pack(fill='x', pady=15)
         
         # Input 2 & 3: Sell Components
         ttk.Label(control_frame, text="SELL FACTORS", font=("Segoe UI", 10, "bold"), foreground="red").pack(anchor="w")
@@ -212,14 +212,14 @@ class FuzzyApp:
     def update_chart(self):
         try:
             # Get values
-            t_val = 50 # Sideways
+            # t_val = 50 # Sideways
             wu_val = self.mapping.get(self.var_w_up.get(), 0)
             wl_val = self.mapping.get(self.var_w_low.get(), 0)
             bu_val = self.mapping.get(self.var_b_up.get(), 0)
             bd_val = self.mapping.get(self.var_b_down.get(), 0)
 
             # Pass inputs
-            self.simulation.input['trend'] = t_val
+            # self.simulation.input['trend'] = t_val
             self.simulation.input['wick_upper'] = wu_val
             self.simulation.input['wick_lower'] = wl_val
             self.simulation.input['break_up']   = bu_val
