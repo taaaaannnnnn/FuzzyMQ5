@@ -16,6 +16,11 @@
 │   └── `Utils/`
 │       ├── `Logger.mqh` (Standardized Logging)
 │       └── `Definitions.mqh` (Centralized Constants & Variable Names)
+├── `Tests/`
+│   └── `Python_Fuzzy_Sim/`
+│       ├── `fuzzy_simulator.py` (Digital Twin & GUI Simulator)
+│       ├── `test_fuzzy_logic.py` (Unit Tests for Logic Verification)
+│       └── `requirements.txt` (Python dependencies)
 └── `Documentation/`
     ├── `rules.csv` (Official Confirmed Rules)
     ├── `lessons_learned.md` (Technical Knowledge Base & API Docs)
@@ -49,6 +54,11 @@
 *   **Path:** `<Math\Fuzzy\mamdanifuzzysystem.mqh>`
 *   **Usage:** Leverages the official MetaQuotes implementation for Mamdani inference.
 
-### 5. Utilities & Config
+### 5. Python Digital Twin (`Tests/Python_Fuzzy_Sim/`)
+*   **Role:** Offline verification and visualization.
+*   **`fuzzy_simulator.py`**: A Tkinter/Matplotlib GUI that replicates the MQL5 fuzzy logic. Used to visualize membership functions and rule surfaces without compiling MQL5.
+*   **`test_fuzzy_logic.py`**: Automated unit tests to ensure the logic outputs (Buy/Sell/Neutral) match the `rules.csv` specifications.
+
+### 6. Utilities & Config
 *   **`Definitions.mqh`**: The **Source of Truth** for all strings and numbers. No magic values allowed elsewhere.
 *   **`project_env.json`**: Decouples the source code from the local machine environment.

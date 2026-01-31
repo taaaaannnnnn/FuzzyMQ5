@@ -38,8 +38,9 @@ We will have two types of input variables:
     *   `NOT_FORMED`
     *   `IN_OLD_TREND`
 
-#### CONFIRMED RULES (Implemented):
+#### CONFIRMED RULES (Implemented & Verified):
 These rules apply only IF `Trend` IS `SIDEWAYS`.
+*(Status: VERIFIED via Python Simulator v1.0)*
 
 1.  IF `Daily_Rejection_Candle_Detected` IS `YES` AND `H1_Breakout_Strength` IS `STRONG` THEN `Trend_Reversal` IS `CLEARLY_FORMING`.
 2.  IF `Daily_Rejection_Candle_Detected` IS `YES` AND `H1_Breakout_Strength` IS `WEAK` THEN `Trend_Reversal` IS `WEAKLY_FORMING`.

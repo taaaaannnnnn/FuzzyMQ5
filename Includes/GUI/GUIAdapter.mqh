@@ -27,9 +27,9 @@ public:
    double GetH1BreakoutValue() 
    {
       int val = (int)m_panel.getH1BreakoutStrength();
-      if(val == 1) return VAL_H1_WEAK;   // Mapped from Definitions
-      if(val == 2) return VAL_H1_STRONG; // Mapped from Definitions
-      return VAL_H1_NONE;
+      if(val == 1) return VAL_STRENGTH_WEAK;   // Mapped from Definitions
+      if(val == 2) return VAL_STRENGTH_STRONG; // Mapped from Definitions
+      return VAL_STRENGTH_NONE;
    }
    
    string GetH1BreakoutStatus() { return EnumToString(m_panel.getH1BreakoutStrength()); }
