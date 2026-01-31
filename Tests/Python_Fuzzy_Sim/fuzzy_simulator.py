@@ -1,284 +1,203 @@
 import tkinter as tk
 from tkinter import ttk
 import numpy as np
-# Remove pyplot to avoid global state conflicts
-# import matplotlib.pyplot as plt 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 # ==========================================
-# 1. FUZZY SYSTEM SETUP (scikit-fuzzy)
+# 1. FUZZY SYSTEM SETUP (Matches MQL5 v0.99 Beta - No C3)
 # ==========================================
 
 def create_fuzzy_system():
-    # --- Inputs ---
-    # trend = ctrl.Antecedent(np.arange(0, 101, 1), 'trend') # Removed to align with MQL5
-    wick_upper = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_upper')
-    wick_lower = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_lower')
-    break_up   = ctrl.Antecedent(np.arange(0, 101, 1), 'break_up')
-    break_down = ctrl.Antecedent(np.arange(0, 101, 1), 'break_down')
+    # 1. Inputs
+    trend = ctrl.Antecedent(np.arange(0, 101, 1), 'trend')
+    wick_up = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_up')
+    wick_lo = ctrl.Antecedent(np.arange(0, 101, 1), 'wick_lo')
+    h1_bear = ctrl.Antecedent(np.arange(0, 101, 1), 'h1_bear')
+    h1_bull = ctrl.Antecedent(np.arange(0, 101, 1), 'h1_bull')
 
-    # --- Output ---
+    # 2. Output
     reversal = ctrl.Consequent(np.arange(-100, 101, 1), 'reversal')
 
-    # --- Membership Functions ---
-    # trend['SIDEWAYS'] = fuzz.trapmf(trend.universe, [40, 50, 50, 60])
+    # 3. MFs (Membership Functions)
+    trend['BEARISH']  = fuzz.trapmf(trend.universe, [0, 0, 30, 40])
+    trend['SIDEWAYS'] = fuzz.trapmf(trend.universe, [40, 50, 50, 60])
+    trend['BULLISH']  = fuzz.trapmf(trend.universe, [60, 70, 100, 100])
 
-    for comp in [wick_upper, wick_lower, break_up, break_down]:
-        comp['NONE']   = fuzz.trapmf(comp.universe, [0, 0, 20, 30])
-        comp['WEAK']   = fuzz.trapmf(comp.universe, [30, 40, 60, 70])
-        comp['STRONG'] = fuzz.trapmf(comp.universe, [70, 80, 100, 100])
+    for v in [wick_up, wick_lo, h1_bear, h1_bull]:
+        v['NONE']   = fuzz.trapmf(v.universe, [0, 0, 20, 30])
+        v['WEAK']   = fuzz.trapmf(v.universe, [30, 40, 60, 70])
+        v['STRONG'] = fuzz.trapmf(v.universe, [70, 80, 100, 100])
 
     reversal['CLEARLY_DOWN']  = fuzz.trapmf(reversal.universe, [-100, -100, -85, -75])
-    reversal['MODERATE_DOWN'] = fuzz.trapmf(reversal.universe, [-80, -70, -70, -60])
-    reversal['WEAK_DOWN']     = fuzz.trapmf(reversal.universe, [-60, -50, -50, -40])
-    reversal['STARTING_DOWN'] = fuzz.trapmf(reversal.universe, [-45, -35, -35, -25])
-    reversal['NOT_FORMED']    = fuzz.trapmf(reversal.universe, [-25, -5, 5, 25])
-    reversal['STARTING_UP']   = fuzz.trapmf(reversal.universe, [25, 35, 35, 45])
-    reversal['WEAK_UP']       = fuzz.trapmf(reversal.universe, [40, 50, 50, 60])
-    reversal['MODERATE_UP']   = fuzz.trapmf(reversal.universe, [60, 70, 70, 80])
+    reversal['MODERATE_DOWN'] = fuzz.trapmf(reversal.universe, [-75, -65, -55, -45])
+    reversal['WEAK_DOWN']     = fuzz.trapmf(reversal.universe, [-50, -40, -40, -30])
+    reversal['STARTING_DOWN'] = fuzz.trapmf(reversal.universe, [-30, -20, -20, -10])
+    reversal['NOT_FORMED']    = fuzz.trapmf(reversal.universe, [-10, 0, 0, 10])
+    reversal['STARTING_UP']   = fuzz.trapmf(reversal.universe, [10, 20, 20, 30])
+    reversal['WEAK_UP']       = fuzz.trapmf(reversal.universe, [30, 40, 40, 50])
+    reversal['MODERATE_UP']   = fuzz.trapmf(reversal.universe, [45, 55, 65, 75])
     reversal['CLEARLY_UP']    = fuzz.trapmf(reversal.universe, [75, 85, 100, 100])
 
-    # --- Rules ---
+    # 4. Rules
     rules = []
 
-    # Buy Rules (Aligned with MQL5 - removed trend condition)
-    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['STRONG'], reversal['CLEARLY_UP']))
-    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['WEAK'],   reversal['WEAK_UP']))
+    # --- SIDEWAYS (Target 70) ---
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_up['STRONG'] & h1_bear['STRONG'], reversal['MODERATE_DOWN'])) # S1
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_up['STRONG'] & h1_bear['WEAK'],   reversal['WEAK_DOWN']))     # S2
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_up['NONE'] & wick_lo['NONE'] & h1_bear['STRONG'], reversal['STARTING_DOWN'])) # S3
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_up['STRONG'] & h1_bear['NONE'] & h1_bull['NONE'], reversal['STARTING_DOWN'])) # S4
 
-    # Sell Rules
-    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['STRONG'], reversal['CLEARLY_DOWN']))
-    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['WEAK'],   reversal['WEAK_DOWN']))
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lo['STRONG'] & h1_bull['STRONG'], reversal['MODERATE_UP']))   # B1
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lo['STRONG'] & h1_bull['WEAK'],   reversal['WEAK_UP']))       # B2
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lo['NONE'] & wick_up['NONE'] & h1_bull['STRONG'], reversal['STARTING_UP']))   # B3
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lo['STRONG'] & h1_bull['NONE'] & h1_bear['NONE'], reversal['STARTING_UP']))   # B4
 
-    # Rule 3: Confirmed Rejection but No Momentum (Daily=YES, H1=NONE) -> NOT_FORMED
-    rules.append(ctrl.Rule(wick_lower['STRONG'] & break_up['NONE'],   reversal['NOT_FORMED']))
-    rules.append(ctrl.Rule(wick_upper['STRONG'] & break_down['NONE'], reversal['NOT_FORMED']))
+    # Conflict Sideways (+/- 15)
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_up['STRONG'] & h1_bull['STRONG'], reversal['WEAK_UP'])) 
+    rules.append(ctrl.Rule(trend['SIDEWAYS'] & wick_lo['STRONG'] & h1_bear['STRONG'], reversal['WEAK_DOWN']))
 
-    # Neutral Rules (No Change)
-    rules.append(ctrl.Rule(wick_upper['NONE'] & wick_lower['NONE'], reversal['NOT_FORMED']))
-    rules.append(ctrl.Rule(wick_upper['STRONG'] & wick_lower['STRONG'], reversal['NOT_FORMED'])) # Conflict = Neutral
+    # --- UPTREND (Target 95) ---
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_lo['STRONG'] & h1_bull['STRONG'], reversal['CLEARLY_UP']))  # U1
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_lo['STRONG'] & h1_bull['WEAK'],   reversal['MODERATE_UP'])) # U2
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_lo['NONE']   & h1_bull['STRONG'], reversal['MODERATE_UP'])) # U3
 
+    # Friction (-15) & Momentum Drag (-20)
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_up['STRONG'], reversal['STARTING_DOWN']))     # U_DRAG (-15)
+    rules.append(ctrl.Rule(trend['BULLISH'] & h1_bear['STRONG'], reversal['STARTING_DOWN'])) # U_MOM_DRAG (-20)
+    
+    # Counter (-25) 
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_up['STRONG'] & h1_bear['STRONG'], reversal['STARTING_DOWN'])) # U_C1 (-25)
+    rules.append(ctrl.Rule(trend['BULLISH'] & wick_up['STRONG'] & h1_bear['WEAK'],   reversal['STARTING_DOWN'])) # U_C2
+    # U_C3 REMOVED
+
+    # --- DOWNTREND (Target -95) ---
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_up['STRONG'] & h1_bear['STRONG'], reversal['CLEARLY_DOWN'])) # D1
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_up['STRONG'] & h1_bear['WEAK'],   reversal['MODERATE_DOWN'])) # D2
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_up['NONE']   & h1_bear['STRONG'], reversal['MODERATE_DOWN'])) # D3
+
+    # Friction (+15) & Momentum Drag (+20)
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_lo['STRONG'], reversal['STARTING_UP']))       # D_DRAG (+15)
+    rules.append(ctrl.Rule(trend['BEARISH'] & h1_bull['STRONG'], reversal['STARTING_UP']))   # D_MOM_DRAG (+20)
+    
+    # Counter (+25)
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_lo['STRONG'] & h1_bull['STRONG'], reversal['STARTING_UP'])) # D_C1
+    rules.append(ctrl.Rule(trend['BEARISH'] & wick_lo['STRONG'] & h1_bull['WEAK'],   reversal['STARTING_UP'])) # D_C2
+    # D_C3 REMOVED
+
+    # Build
     reversal_ctrl = ctrl.ControlSystem(rules)
     simulation = ctrl.ControlSystemSimulation(reversal_ctrl)
     
-    return simulation, reversal  # Return reversal consequent for plotting
+    return simulation, reversal
 
 # ==========================================
-# 2. CONSOLE DEMO
-# ==========================================
-def run_console_demo():
-    # 1. Initialize System
-    sim, _ = create_fuzzy_system()
-    
-    # 2. Define Test Scenarios
-    scenarios = [
-        {
-            "name": "SCENARIO 1: Strong Buy Setup",
-            "desc": "Sideways + Strong Lower Wick + Strong Break Up",
-            "inputs": {'wick_upper': 10, 'wick_lower': 90, 'break_up': 90, 'break_down': 10}
-        },
-        {
-            "name": "SCENARIO 2: Weak Sell Setup",
-            "desc": "Sideways + Strong Upper Wick + Weak Break Down",
-            "inputs": {'wick_upper': 90, 'wick_lower': 10, 'break_up': 10, 'break_down': 50}
-        },
-        {
-            "name": "SCENARIO 3: No Momentum (Neutral)",
-            "desc": "Sideways + Strong Lower Wick + No Breakout",
-            "inputs": {'wick_upper': 10, 'wick_lower': 90, 'break_up': 10, 'break_down': 10}
-        },
-        {
-            "name": "SCENARIO 4: No Signal",
-            "desc": "Sideways + No Wicks + Strong Break Up (Ignored)",
-            "inputs": {'wick_upper': 10, 'wick_lower': 10, 'break_up': 90, 'break_down': 10}
-        }
-    ]
-
-    print("\n=== FUZZY LOGIC SIMULATION RESULTS ===")
-
-    # 3. Run Simulations
-    for sc in scenarios:
-        print(f"\n--- {sc['name']} ---")
-        print(f"Context: {sc['desc']}")
-        
-        # Set Inputs
-        for key, val in sc['inputs'].items():
-            sim.input[key] = val
-            
-        # Compute
-        try:
-            sim.compute()
-            score = sim.output['reversal']
-            
-            # Interpret Result
-            decision = "NEUTRAL"
-            if score > 60: decision = "STRONG BUY"
-            elif score > 20: decision = "WEAK BUY"
-            elif score < -60: decision = "STRONG SELL"
-            elif score < -20: decision = "WEAK SELL"
-            
-            print(f"Inputs: {sc['inputs']}")
-            print(f"Output Score: {score:.2f}")
-            print(f"Decision:     {decision}")
-            
-        except Exception as e:
-            print(f"Error computing: {e}")
-    print("\n======================================\n")
-
-# ==========================================
-# 3. GUI APP (Dropdown Style)
+# 2. GUI APP
 # ==========================================
 
 class FuzzyApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Fuzzy Logic Simulator (Digital Twin)")
-        self.root.geometry("1100x700")
+        self.root.title("Fuzzy Logic Digital Twin (v0.99 Beta - No C3)")
+        self.root.geometry("1200x800")
         
-        # Initialize Fuzzy System
         self.simulation, self.reversal_consequent = create_fuzzy_system()
         
-        # Define Mapping
-        self.mapping = {
-            "NONE": 10,
-            "WEAK": 50,
-            "STRONG": 90
-        }
+        self.val_map = {"NONE": 10, "WEAK": 50, "STRONG": 90, "SIDEWAYS": 50, "BEARISH": 20, "BULLISH": 80}
         
-        # self.var_trend = tk.StringVar(value="SIDEWAYS")
+        self.var_trend = tk.StringVar(value="SIDEWAYS")
         self.var_w_up  = tk.StringVar(value="NONE")
-        self.var_w_low = tk.StringVar(value="NONE")
-        self.var_b_up  = tk.StringVar(value="NONE")
-        self.var_b_down= tk.StringVar(value="NONE")
-        
-        # Proper Matplotlib Embedding
-        self.fig = Figure(figsize=(8, 6), dpi=100)
-        self.ax = self.fig.add_subplot(111)
+        self.var_w_lo  = tk.StringVar(value="NONE")
+        self.var_be    = tk.StringVar(value="NONE")
+        self.var_bu    = tk.StringVar(value="NONE")
         
         self.setup_ui()
         self.update_chart()
 
     def setup_ui(self):
-        # Main Layout: 2 Columns
-        # Left: Controls (Inputs)
-        # Right: Chart (Output)
+        # Left Panel (Controls)
+        left = ttk.Frame(self.root, padding=20, width=300)
+        left.pack(side=tk.LEFT, fill=tk.Y)
         
-        control_frame = ttk.Frame(self.root, padding=20, width=300)
-        control_frame.pack(side=tk.LEFT, fill=tk.Y)
+        ttk.Label(left, text="Inputs", font=("Arial", 16, "bold")).pack(pady=10)
         
-        # Title
-        ttk.Label(control_frame, text="MQL5 Dashboard Inputs", font=("Segoe UI", 16, "bold")).pack(pady=(0, 20))
+        self.create_combo(left, "Trend", self.var_trend, ["BEARISH", "SIDEWAYS", "BULLISH"])
+        ttk.Separator(left).pack(fill='x', pady=10)
         
-        # Input 1: Trend
-        # self.create_dropdown(control_frame, "Trend Context", self.var_trend, ["SIDEWAYS"])
-        # ttk.Separator(control_frame, orient='horizontal').pack(fill='x', pady=15)
+        ttk.Label(left, text="Daily Wicks", font=("Arial", 10, "bold")).pack(anchor="w")
+        self.create_combo(left, "Upper (Sell)", self.var_w_up, ["NONE", "STRONG"], "red")
+        self.create_combo(left, "Lower (Buy)",  self.var_w_lo, ["NONE", "STRONG"], "green")
+        ttk.Separator(left).pack(fill='x', pady=10)
         
-        # Input 2 & 3: Sell Components
-        ttk.Label(control_frame, text="SELL FACTORS", font=("Segoe UI", 10, "bold"), foreground="red").pack(anchor="w")
-        self.create_dropdown(control_frame, "Wick Upper (Resist. Rej)", self.var_w_up, ["NONE", "WEAK", "STRONG"])
-        self.create_dropdown(control_frame, "H1 Break Down", self.var_b_down, ["NONE", "WEAK", "STRONG"])
-        ttk.Separator(control_frame, orient='horizontal').pack(fill='x', pady=15)
+        ttk.Label(left, text="H1 Breakout", font=("Arial", 10, "bold")).pack(anchor="w")
+        self.create_combo(left, "Bear (Sell)", self.var_be, ["NONE", "WEAK", "STRONG"], "red")
+        self.create_combo(left, "Bull (Buy)",  self.var_bu, ["NONE", "WEAK", "STRONG"], "green")
+        
+        # Result Panel
+        res = ttk.LabelFrame(left, text="Result", padding=20)
+        res.pack(fill='x', pady=20)
+        self.lbl_score = ttk.Label(res, text="0.0", font=("Consolas", 30, "bold"))
+        self.lbl_score.pack()
+        self.lbl_msg = ttk.Label(res, text="NEUTRAL", font=("Arial", 12))
+        self.lbl_msg.pack()
+        
+        # LOG BUTTON
+        btn_log = tk.Button(left, text="LOG CASE", font=("Arial", 12, "bold"), bg="#ddd", command=self.log_case)
+        btn_log.pack(fill='x', pady=20)
+        
+        # Right Panel (Chart)
+        right = ttk.Frame(self.root)
+        right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        
+        self.fig = Figure(figsize=(8,6), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=right)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # Input 4 & 5: Buy Components
-        ttk.Label(control_frame, text="BUY FACTORS", font=("Segoe UI", 10, "bold"), foreground="green").pack(anchor="w")
-        self.create_dropdown(control_frame, "Wick Lower (Supp. Rej)", self.var_w_low, ["NONE", "WEAK", "STRONG"])
-        self.create_dropdown(control_frame, "H1 Break Up", self.var_b_up, ["NONE", "WEAK", "STRONG"])
-        
-        # Result Box
-        res_frame = ttk.LabelFrame(control_frame, text="Fuzzy Output", padding=10)
-        res_frame.pack(fill=tk.X, pady=30)
-        
-        self.lbl_score = ttk.Label(res_frame, text="0.00", font=("Consolas", 24, "bold"))
-        self.lbl_score.pack(anchor="center")
-        self.lbl_status = ttk.Label(res_frame, text="NEUTRAL", font=("Segoe UI", 12))
-        self.lbl_status.pack(anchor="center")
-
-        # Chart Area
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-    def create_dropdown(self, parent, label, variable, values):
-        frame = ttk.Frame(parent)
-        frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Label(frame, text=label).pack(anchor="w")
-        
-        cb = ttk.Combobox(frame, textvariable=variable, values=values, state="readonly", font=("Segoe UI", 10))
-        cb.pack(fill=tk.X)
+    def create_combo(self, parent, label, var, values, color="black"):
+        f = ttk.Frame(parent)
+        f.pack(fill='x', pady=5)
+        ttk.Label(f, text=label, foreground=color).pack(anchor="w")
+        cb = ttk.Combobox(f, textvariable=var, values=values, state="readonly")
+        cb.pack(fill='x')
         cb.bind("<<ComboboxSelected>>", lambda e: self.update_chart())
 
     def update_chart(self):
         try:
-            # Get values
-            # t_val = 50 # Sideways
-            wu_val = self.mapping.get(self.var_w_up.get(), 0)
-            wl_val = self.mapping.get(self.var_w_low.get(), 0)
-            bu_val = self.mapping.get(self.var_b_up.get(), 0)
-            bd_val = self.mapping.get(self.var_b_down.get(), 0)
-
-            # Pass inputs
-            # self.simulation.input['trend'] = t_val
-            self.simulation.input['wick_upper'] = wu_val
-            self.simulation.input['wick_lower'] = wl_val
-            self.simulation.input['break_up']   = bu_val
-            self.simulation.input['break_down'] = bd_val
+            self.simulation.input['trend'] = self.val_map[self.var_trend.get()]
+            self.simulation.input['wick_up'] = self.val_map[self.var_w_up.get()]
+            self.simulation.input['wick_lo'] = self.val_map[self.var_w_lo.get()]
+            self.simulation.input['h1_bear'] = self.val_map[self.var_be.get()]
+            self.simulation.input['h1_bull'] = self.val_map[self.var_bu.get()]
             
-            # Compute
             self.simulation.compute()
             score = self.simulation.output['reversal']
-            
-        except Exception as e:
+        except:
             score = 0.0
-
-        # Update Text
-        self.lbl_score.config(text=f"{score:.2f}")
-        
-        status = "NEUTRAL"
-        color = "gray"
-        if score > 60: 
-            status = "STRONG BUY"
-            color = "green"
-        elif score > 20: 
-            status = "WEAK BUY"
-            color = "#2E8B57" # SeaGreen
-        elif score < -60: 
-            status = "STRONG SELL"
-            color = "red"
-        elif score < -20: 
-            status = "WEAK SELL"
-            color = "#B22222" # Firebrick
             
-        self.lbl_status.config(text=status, foreground=color)
-        self.lbl_score.config(foreground=color)
-
-        # Draw Graph (MANUALLY to avoid popup issues)
-        self.ax.clear()
+        self.lbl_score.config(text=f"{score:.1f}")
+        msg = "NEUTRAL"
+        if score > 60: msg = "STRONG BUY"
+        elif score > 20: msg = "WEAK BUY"
+        elif score < -60: msg = "STRONG SELL"
+        elif score < -20: msg = "WEAK SELL"
+        self.lbl_msg.config(text=msg)
         
-        # 1. Plot Membership Functions
+        self.ax.clear()
         universe = self.reversal_consequent.universe
         for label, term in self.reversal_consequent.terms.items():
-            self.ax.plot(universe, term.mf, label=label, linewidth=1, alpha=0.5)
-            
-        # 2. Plot Result Line
-        self.ax.axvline(x=score, color='black', linewidth=3, linestyle='--')
-        self.ax.text(score, 1.05, f"{score:.1f}", ha='center', va='bottom', fontsize=12, fontweight='bold')
-
-        # 3. Styling
-        self.ax.set_title("Fuzzy Logic Decision Surface")
-        self.ax.set_xlabel("Reversal Score (-100 Sell ... +100 Buy)")
-        self.ax.set_ylim(0, 1.1)
-        self.ax.grid(True, alpha=0.2)
-        # self.ax.legend(loc='upper right', fontsize='small') # Optional, might crowd the plot
-        
+            self.ax.plot(universe, term.mf, label=label, alpha=0.3)
+        self.ax.axvline(x=score, color='r', linestyle='--', linewidth=2)
+        self.ax.set_title(f"Score: {score:.1f} ({msg})")
+        self.ax.legend(loc='upper right', fontsize='small')
         self.canvas.draw()
 
+    def log_case(self):
+        print(f"[LOG] Inputs: T={self.var_trend.get()} | W_UP={self.var_w_up.get()} | W_LO={self.var_w_lo.get()} | H1_BE={self.var_be.get()} | H1_BU={self.var_bu.get()} || Output: {self.lbl_score.cget('text')}")
+
 if __name__ == "__main__":
-    # RUN CONSOLE DEMO FIRST
-    run_console_demo()
-    
-    # THEN START GUI
     root = tk.Tk()
     app = FuzzyApp(root)
     root.mainloop()

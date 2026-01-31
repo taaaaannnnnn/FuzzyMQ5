@@ -196,12 +196,15 @@ void InitReversalSystem()
    m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is STRONG) then (Trend_Reversal is WEAK_DOWN)");
    // U_C2: Counter - Strong Wick Upper + Weak Bear -> Starting Down
    m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is WEAK) then (Trend_Reversal is STARTING_DOWN)");
-   // U_C3: Counter - Strong Wick Upper + No Bear -> Not Formed
-   m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) and (H1_Bear_Break is NONE) then (Trend_Reversal is NOT_FORMED)");
+   // U_C3 REMOVED: Prevent double punishment. Friction rule handles the wick impact.
 
    // ** U_DRAG: Friction Rule **
-   // If Uptrend but hitting Resistance (Upper Wick), reduce the Buy score significantly
-   m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) then (Trend_Reversal is WEAK_DOWN)");
+   // If Uptrend but hitting Resistance (Upper Wick), reduce the Buy score SLIGHTLY (was WEAK_DOWN, now STARTING_DOWN)
+   m_reversal_system.AddRule(up + "(Daily_Upper_Wick is STRONG) then (Trend_Reversal is STARTING_DOWN)");
+   
+   // ** U_MOM_DRAG: Momentum Drag **
+   // If Uptrend but H1 is crashing (Strong Bear), reduce Buy score even if no Daily Wick
+   m_reversal_system.AddRule(up + "(H1_Bear_Break is STRONG) then (Trend_Reversal is STARTING_DOWN)");
 
 
    // --- 3. DOWNTREND SCENARIOS ---
@@ -218,10 +221,13 @@ void InitReversalSystem()
    m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is STRONG) then (Trend_Reversal is WEAK_UP)");
    // D_C2: Counter - Strong Wick Lower + Weak Bull -> Starting Up
    m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is WEAK) then (Trend_Reversal is STARTING_UP)");
-   // D_C3: Counter - Strong Wick Lower + No Bull -> Not Formed
-   m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) and (H1_Bull_Break is NONE) then (Trend_Reversal is NOT_FORMED)");
+   // D_C3 REMOVED
 
    // ** D_DRAG: Friction Rule **
-   // If Downtrend but hitting Support (Lower Wick), reduce the Sell score significantly
-   m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) then (Trend_Reversal is WEAK_UP)");
+   // If Downtrend but hitting Support (Lower Wick), reduce the Sell score SLIGHTLY
+   m_reversal_system.AddRule(dn + "(Daily_Lower_Wick is STRONG) then (Trend_Reversal is STARTING_UP)");
+   
+   // ** D_MOM_DRAG: Momentum Drag **
+   // If Downtrend but H1 is pumping (Strong Bull), reduce Sell score even if no Daily Wick
+   m_reversal_system.AddRule(dn + "(H1_Bull_Break is STRONG) then (Trend_Reversal is STARTING_UP)");
 }
