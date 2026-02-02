@@ -67,19 +67,18 @@ int OnInit()
    // 2. Trend Modules Setup (Major D1, Minor H1)
    h_zz_slow = iCustom(_Symbol, PERIOD_D1, "Examples\\ZigZag", 12, 5, 3);
    h_zz_fast = iCustom(_Symbol, PERIOD_H1, "Examples\\ZigZag", 5, 2, 2);
-   h_atr     = iATR(_Symbol, PERIOD_D1, 14); // ATR on Daily for normalization
    
-   if(h_zz_slow == INVALID_HANDLE || h_zz_fast == INVALID_HANDLE || h_atr == INVALID_HANDLE)
+   if(h_zz_slow == INVALID_HANDLE || h_zz_fast == INVALID_HANDLE)
    {
-      Logger::Error("Main", "Failed to create Indicator handles!");
+      Logger::Error("Main", "Failed to create ZigZag handles!");
       return(INIT_FAILED);
    }
    
-   // Major D1: Full Sensitivity (1.0)
-   m_trend_collector.AddModule(new CZigZagModule("Major_ZZ", h_zz_slow, h_atr, PERIOD_D1, 0, 1.0));
+   // Major D1: Standard State Machine
+   m_trend_collector.AddModule(new CZigZagModule("Major_ZZ", h_zz_slow, PERIOD_D1));
    
-   // Minor H1: Reduced Sensitivity (0.7) to filter noise
-   m_trend_collector.AddModule(new CZigZagModule("Minor_ZZ", h_zz_fast, h_atr, PERIOD_H1, 0, 0.7));
+   // Minor H1: Standard State Machine
+   m_trend_collector.AddModule(new CZigZagModule("Minor_ZZ", h_zz_fast, PERIOD_H1));
    
    if(!m_trend_collector.InitAll()) return(INIT_FAILED);
 
