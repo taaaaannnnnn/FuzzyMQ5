@@ -24,15 +24,16 @@ struct ZigZagLeg
 class CZigZagModule : public CTrendModule
   {
 private:
-   int               m_handle;      // Indicator handle
+   int               m_handle;      // ZigZag handle
+   int               m_handle_atr;  // ATR handle for normalization
    int               m_buffer_idx;
    string            m_symbol;
    ENUM_TIMEFRAMES   m_period;
-   double            m_sensitivity; // Sensitivity factor (1.0 = standard, <1.0 = filtered)
+   double            m_sensitivity; 
 
 public:
-                     CZigZagModule(string name, int handle, ENUM_TIMEFRAMES period, int buffer_idx=0, double sensitivity=1.0)
-                     : CTrendModule(name), m_handle(handle), m_period(period), m_buffer_idx(buffer_idx), m_sensitivity(sensitivity)
+                     CZigZagModule(string name, int handle, int handle_atr, ENUM_TIMEFRAMES period, int buffer_idx=0, double sensitivity=1.0)
+                     : CTrendModule(name), m_handle(handle), m_handle_atr(handle_atr), m_period(period), m_buffer_idx(buffer_idx), m_sensitivity(sensitivity)
      {
       m_symbol = _Symbol;
      }
@@ -48,6 +49,10 @@ public:
       datetime times[5];
       if(!GetZigZagVertices(points, times)) return 0.0;
       
+      // Get ATR for Volatility Context
+      double atr = GetCurrentATR();
+      if(atr == 0) atr = 0.00100; // Fallback
+      
       points[0] = current_price;
       times[0] = current_time;
 
@@ -55,8 +60,8 @@ public:
       ZigZagLeg legs[4];
       BuildLegs(points, times, legs);
 
-      // 3. Sub-Calculations
-      double score_struct = CalcStructure(points); 
+      // 3. Sub-Calculations (New Continuous Logic)
+      double score_struct = CalcStructure(points, atr); 
       
       double dir = 0;
       if(score_struct > 0) dir = 1.0;
@@ -68,18 +73,50 @@ public:
          return 0.0;
         }
 
-      double score_effic  = CalcEfficiency(legs, dir);  
+      // --- LOGIC FIX: Handle V-Shape Reversal ---
+      double score_effic = 0;
+      // Is it a breakout? If structure score is high (> 20), we assume breakout phase
+      bool is_breakout = (MathAbs(score_struct) >= 20.0);
+      
+      if(is_breakout)
+      {
+         double point_val = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
+         if(point_val == 0) point_val = 0.00001;
+         
+         double leg0_len = legs[0].length_pips;
+         double displacement = (legs[0].end_price - legs[0].start_price) / point_val;
+         
+         double E = 0;
+         if(leg0_len > 0) E = displacement / leg0_len; 
+         
+         double relative_E = E * dir; 
+         score_effic = relative_E * 30.0;
+         if(score_effic < 0) score_effic = 0; 
+      }
+      else
+      {
+         score_effic = CalcEfficiency(legs, dir); 
+      }
+
       double score_time   = CalcTiming(legs, dir);      
 
       // 4. DYNAMIC TIMING BONUS
       double velocity_bonus = 0;
       if(score_time > 20.0) velocity_bonus = 10.0 * dir; 
 
-      // 5. Combine Logic
+      // 5. SIDEWAYS SUPPRESSION
+      double damping = 1.0;
+      double abs_effic = MathAbs(score_effic);
+      if(abs_effic < 15.0) 
+      {
+         damping = 0.5; 
+         score_struct *= damping;
+         score_time   *= damping;
+         velocity_bonus *= damping;
+      }
+
+      // 6. Combine Logic
       double raw_total = score_struct + (score_effic * dir) + (score_time * dir) + velocity_bonus;
-      
-      // APPLY SENSITIVITY SCALING
-      // This dampens the score for noisy timeframes
       raw_total *= m_sensitivity;
       
       double normalized = raw_total / 100.0;
@@ -87,16 +124,23 @@ public:
       if(normalized > 1.0) normalized = 1.0;
       if(normalized < -1.0) normalized = -1.0;
       
-      // LOG TO CONSOLE
-      PrintFormat("TrendModule [%s]: Struct=%.1f, Effic=%.1f, Time=%.1f, Bonus=%.1f | Total(Scaled)=%.2f", 
-                  m_name, score_struct, score_effic, score_time, velocity_bonus, normalized);
+      PrintFormat("TrendModule [%s]: Struct=%.1f, Effic=%.1f, Time=%.1f, Bonus=%.1f, Damp=%.1f | Total=%.2f", 
+                  m_name, score_struct, score_effic, score_time, velocity_bonus, damping, normalized);
 
       m_last_value = normalized;
       return normalized;
      }
 
 private:
-   //--- Helpers (Same logic as before, just kept compact)
+   //--- Helpers
+   double GetCurrentATR()
+   {
+      if(m_handle_atr == INVALID_HANDLE) return 0.0;
+      double buff[1];
+      if(CopyBuffer(m_handle_atr, 0, 0, 1, buff) > 0) return buff[0];
+      return 0.0;
+   }
+
    bool GetZigZagVertices(double &out_points[], datetime &out_times[])
      {
       int required = 4;
@@ -147,70 +191,87 @@ private:
         }
      }
 
-   double CalcStructure(const double &pts[])
+   // --- CONTINUOUS STRUCTURE LOGIC ---
+   double CalcStructure(const double &pts[], double atr)
      {
-      // pts[0] = Current Price (Dynamic)
-      // pts[1] = Last Hard Vertex
-      // pts[2] = Vertex before P1
-      // pts[3] = Vertex before P2
-      // pts[4] = Vertex before P3
-
+      // pts[0]=Cur, pts[1]=LastHard
       bool p1_is_high = (pts[1] > pts[2]);
       
-      // Calculate Average Impulse Velocity for Timing Bonus
-      double v_current = 0;
-      double v_avg_imp = 0;
-      int count_imp = 0;
-      
-      double point_val = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
-      if(point_val == 0) point_val = 0.00001;
+      // Threshold for significant breakout (e.g., 0.5 ATR)
+      double threshold = atr * 0.5;
+      if(threshold == 0) threshold = 0.0001;
 
-      // Current Leg (Leg 0) velocity
-      double len0 = MathAbs(pts[0] - pts[1]) / point_val;
-      // Note: duration calculation here is an estimate since we don't have full leg info yet in this scope
-      // We'll use a simplified version for the bonus.
-      
-      // --- LOGIC 1: DYNAMIC BREAKOUT CHECK (BOS) ---
-      
-      if(p1_is_high) // Moving down from High P1
+      if(p1_is_high) // Moving down from P1
       {
-         if(pts[0] > pts[1]) return 50.0; // Breakout Up (Strong Bullish)
-         
-         if(pts[0] < pts[2]) // Lower Low
+         // 1. Breakout Up Check (P0 > P1)
+         if(pts[0] > pts[1]) 
          {
-            if(pts[1] < pts[3]) return -50.0; // LH + LL (Strong Bearish)
-            return -30.0; // Reversal Down
+            double penetration = pts[0] - pts[1];
+            // Linear scaling: 0.0 -> 0 pts, Threshold -> 50 pts
+            double score = (penetration / threshold) * 50.0;
+            if(score > 50.0) score = 50.0;
+            return score; 
+         }
+         
+         // 2. Breakout Down Check (P0 < P2) -> Continuation/Reversal
+         // Note: P2 is Low
+         if(pts[0] < pts[2])
+         {
+             // Check context: If P1 < P3 (Lower High) AND P0 < P2 (Lower Low) -> Strong Bear
+             double base_score = -20.0;
+             if(pts[1] < pts[3]) base_score = -40.0;
+             
+             // Add penetration bonus
+             double penetration = pts[2] - pts[0];
+             double bonus = (penetration / threshold) * 10.0; // Max +10 extra
+             if(bonus > 10.0) bonus = 10.0;
+             
+             return base_score - bonus;
          }
       }
-      else // Moving up from Low P1
+      else // Moving up from P1
       {
-         if(pts[0] < pts[1]) return -50.0; // Breakout Down (Strong Bearish)
-         
-         if(pts[0] > pts[2]) // Higher High
+         // 1. Breakout Down Check (P0 < P1)
+         if(pts[0] < pts[1])
          {
-            if(pts[1] > pts[3]) return 50.0; // HL + HH (Strong Bullish)
-            return 30.0; // Reversal Up
+            double penetration = pts[1] - pts[0];
+            double score = (penetration / threshold) * 50.0;
+            if(score > 50.0) score = 50.0;
+            return -score; // Negative for Bearish Breakout
+         }
+         
+         // 2. Breakout Up Check (P0 > P2)
+         // Note: P2 is High
+         if(pts[0] > pts[2])
+         {
+            double base_score = 20.0;
+            if(pts[1] > pts[3]) base_score = 40.0; // HL + HH
+            
+            double penetration = pts[0] - pts[2];
+            double bonus = (penetration / threshold) * 10.0;
+            if(bonus > 10.0) bonus = 10.0;
+            
+            return base_score + bonus;
          }
       }
 
-      // --- LOGIC 2: HISTORICAL STRUCTURE (Standard) ---
-      if(p1_is_high) // Sequence: H(1)-L(2)-H(3)-L(4)
+      // --- NO BREAKOUT YET (Retracement / Consolidation) ---
+      // We rely on historical structure, but weaker
+      if(p1_is_high) // H(1)-L(2)-H(3)
         {
          bool HH = (pts[1] > pts[3]);
          bool HL = (pts[2] > pts[4]);
-         if(HH && HL) return 40.0;
-         if(HH) return 20.0;
-         if(HL) return 10.0;
-         return -10.0;
+         if(HH && HL) return 30.0; // Reduced from 40 to allow dynamic to shine
+         if(HH) return 15.0;
+         return -5.0;
         }
-      else // Sequence: L(1)-H(2)-L(3)-H(4)
+      else // L(1)-H(2)-L(3)
         {
          bool LL = (pts[1] < pts[3]);
          bool LH = (pts[2] < pts[4]);
-         if(LL && LH) return -40.0;
-         if(LL) return -20.0;
-         if(LH) return -10.0;
-         return 10.0;
+         if(LL && LH) return -30.0;
+         if(LL) return -15.0;
+         return 5.0;
         }
      }
 
@@ -227,17 +288,13 @@ private:
       // SIGNED Displacement: Current Price (Leg 0 End) minus Start Price (Leg 3 Start)
       double displacement = (legs[0].end_price - legs[3].start_price) / point_val;
       
-      // E = Displacement / Total_Path
-      // If Displacement is in same direction as Trend (direction_sign), E is positive.
-      // If price has reversed below start point, E becomes negative, penalizing the score.
       double E = displacement / total_path; 
       
-      // We normalize E to a 0-1.0 scale relative to the intended direction
       double relative_E = E * direction_sign; 
       
       double score = relative_E * 30.0; 
       if(score > 30.0) score = 30.0;
-      if(score < -30.0) score = -30.0; // Can be negative if price reverses hard
+      if(score < -30.0) score = -30.0; 
       
       return score;
      }
