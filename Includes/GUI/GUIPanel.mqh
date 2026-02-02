@@ -4,7 +4,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, MetaQuotes Ltd."
 #property link      "https://www.mql5.com"
-#property version   "9.00" // 5 Inputs: Trend, Wicks(2), H1(2)
+#property version   "9.01" // 5 Inputs: Trend, Wicks(2), H1(2) - Fixed Multi-Chart
 
 #include <ChartObjects/ChartObjectsTxtControls.mqh>
 #include <ChartObjects/ChartObjectsShapes.mqh>
@@ -28,6 +28,7 @@ private:
     long      m_cid;
     int       m_win;
     int       m_x, m_y, m_w, m_h;
+    string    m_prefix; // Unique Prefix for Object Names
     
     // States
     ENUM_TREND_TYPE m_trend_val;
@@ -193,6 +194,7 @@ private:
 public:
     GUIPanel(long cid=0, int win=0) {
         m_cid=(cid==0)?ChartID():cid; m_win=win; m_x=20; m_y=50; m_w=220; m_h=230;
+        m_prefix = IntegerToString(m_cid) + "_"; // Init Unique Prefix
         m_trend_val=TR_SIDEWAYS; 
         m_w_up_val=STR_NONE; m_w_lo_val=STR_NONE; 
         m_h1_bear_val=STR_NONE; m_h1_bull_val=STR_NONE;
@@ -210,40 +212,40 @@ public:
     
     void Create(int x, int y) {
         m_x=x; m_y=y;
-        m_bg.Create(m_cid,"GB",m_win,x,y,m_w,m_h); m_bg.BackColor(clrWhiteSmoke);
-        m_hb.Create(m_cid,"GH",m_win,x,y,m_w,25); m_hb.BackColor(clrLightSteelBlue);
-        m_tl.Create(m_cid,"GT",m_win,x+10,y+5); m_tl.Description("Fuzzy Controller v9"); m_tl.Color(clrBlack);
-        m_btn_min.Create(m_cid,"GM",m_win,x+m_w-25,y+2,20,20); m_btn_min.BackColor(clrLightGreen); m_btn_min.Color(clrBlack);
+        m_bg.Create(m_cid,m_prefix+"GB",m_win,x,y,m_w,m_h); m_bg.BackColor(clrWhiteSmoke);
+        m_hb.Create(m_cid,m_prefix+"GH",m_win,x,y,m_w,25); m_hb.BackColor(clrLightSteelBlue);
+        m_tl.Create(m_cid,m_prefix+"GT",m_win,x+10,y+5); m_tl.Description("Fuzzy Controller v9"); m_tl.Color(clrBlack);
+        m_btn_min.Create(m_cid,m_prefix+"GM",m_win,x+m_w-25,y+2,20,20); m_btn_min.BackColor(clrLightGreen); m_btn_min.Color(clrBlack);
         
         // Trend
-        m_lbl_tr.Create(m_cid,"L_TR",m_win,0,0); m_lbl_tr.Description("Market Context:"); m_lbl_tr.Color(clrBlack);
-        m_btn_tr_main.Create(m_cid,"B_TR_M",m_win,0,0,200,25); m_btn_tr_main.BackColor(clrWheat); m_btn_tr_main.Color(clrBlack);
-        m_btn_tr_bear.Create(m_cid,"B_TR_1",m_win,-1000,0,200,25); m_btn_tr_bear.Description("BEARISH");
-        m_btn_tr_side.Create(m_cid,"B_TR_2",m_win,-1000,0,200,25); m_btn_tr_side.Description("SIDEWAYS");
-        m_btn_tr_bull.Create(m_cid,"B_TR_3",m_win,-1000,0,200,25); m_btn_tr_bull.Description("BULLISH");
+        m_lbl_tr.Create(m_cid,m_prefix+"L_TR",m_win,0,0); m_lbl_tr.Description("Market Context:"); m_lbl_tr.Color(clrBlack);
+        m_btn_tr_main.Create(m_cid,m_prefix+"B_TR_M",m_win,0,0,200,25); m_btn_tr_main.BackColor(clrWheat); m_btn_tr_main.Color(clrBlack);
+        m_btn_tr_bear.Create(m_cid,m_prefix+"B_TR_1",m_win,-1000,0,200,25); m_btn_tr_bear.Description("BEARISH");
+        m_btn_tr_side.Create(m_cid,m_prefix+"B_TR_2",m_win,-1000,0,200,25); m_btn_tr_side.Description("SIDEWAYS");
+        m_btn_tr_bull.Create(m_cid,m_prefix+"B_TR_3",m_win,-1000,0,200,25); m_btn_tr_bull.Description("BULLISH");
         
         // Wicks
-        m_lbl_w.Create(m_cid,"L_W",m_win,0,0); m_lbl_w.Description("Daily Wicks (Up/Lo):"); m_lbl_w.Color(clrBlack);
-        m_btn_w_up_main.Create(m_cid,"B_WU_M",m_win,0,0,95,25); m_btn_w_up_main.BackColor(clrLightPink); m_btn_w_up_main.Color(clrBlack);
-        m_btn_w_lo_main.Create(m_cid,"B_WL_M",m_win,0,0,95,25); m_btn_w_lo_main.BackColor(clrLightGreen); m_btn_w_lo_main.Color(clrBlack);
+        m_lbl_w.Create(m_cid,m_prefix+"L_W",m_win,0,0); m_lbl_w.Description("Daily Wicks (Up/Lo):"); m_lbl_w.Color(clrBlack);
+        m_btn_w_up_main.Create(m_cid,m_prefix+"B_WU_M",m_win,0,0,95,25); m_btn_w_up_main.BackColor(clrLightPink); m_btn_w_up_main.Color(clrBlack);
+        m_btn_w_lo_main.Create(m_cid,m_prefix+"B_WL_M",m_win,0,0,95,25); m_btn_w_lo_main.BackColor(clrLightGreen); m_btn_w_lo_main.Color(clrBlack);
         
-        m_opt_w_up_none.Create(m_cid,"O_WU_0",m_win,-1000,0,95,25); m_opt_w_up_none.Description("NONE");
-        m_opt_w_up_str.Create(m_cid,"O_WU_1",m_win,-1000,0,95,25); m_opt_w_up_str.Description("STRONG");
-        m_opt_w_lo_none.Create(m_cid,"O_WL_0",m_win,-1000,0,95,25); m_opt_w_lo_none.Description("NONE");
-        m_opt_w_lo_str.Create(m_cid,"O_WL_1",m_win,-1000,0,95,25); m_opt_w_lo_str.Description("STRONG");
+        m_opt_w_up_none.Create(m_cid,m_prefix+"O_WU_0",m_win,-1000,0,95,25); m_opt_w_up_none.Description("NONE");
+        m_opt_w_up_str.Create(m_cid,m_prefix+"O_WU_1",m_win,-1000,0,95,25); m_opt_w_up_str.Description("STRONG");
+        m_opt_w_lo_none.Create(m_cid,m_prefix+"O_WL_0",m_win,-1000,0,95,25); m_opt_w_lo_none.Description("NONE");
+        m_opt_w_lo_str.Create(m_cid,m_prefix+"O_WL_1",m_win,-1000,0,95,25); m_opt_w_lo_str.Description("STRONG");
 
         // H1
-        m_lbl_h1.Create(m_cid,"L_H1",m_win,0,0); m_lbl_h1.Description("H1 Break (Bear/Bull):"); m_lbl_h1.Color(clrBlack);
-        m_btn_h1_bear_main.Create(m_cid,"B_HB_M",m_win,0,0,95,25); m_btn_h1_bear_main.BackColor(clrLightPink); m_btn_h1_bear_main.Color(clrBlack);
-        m_btn_h1_bull_main.Create(m_cid,"B_HU_M",m_win,0,0,95,25); m_btn_h1_bull_main.BackColor(clrLightGreen); m_btn_h1_bull_main.Color(clrBlack);
+        m_lbl_h1.Create(m_cid,m_prefix+"L_H1",m_win,0,0); m_lbl_h1.Description("H1 Break (Bear/Bull):"); m_lbl_h1.Color(clrBlack);
+        m_btn_h1_bear_main.Create(m_cid,m_prefix+"B_HB_M",m_win,0,0,95,25); m_btn_h1_bear_main.BackColor(clrLightPink); m_btn_h1_bear_main.Color(clrBlack);
+        m_btn_h1_bull_main.Create(m_cid,m_prefix+"B_HU_M",m_win,0,0,95,25); m_btn_h1_bull_main.BackColor(clrLightGreen); m_btn_h1_bull_main.Color(clrBlack);
         
-        m_opt_h1_be_none.Create(m_cid,"O_HB_0",m_win,-1000,0,95,25); m_opt_h1_be_none.Description("NONE");
-        m_opt_h1_be_wk.Create(m_cid,"O_HB_1",m_win,-1000,0,95,25); m_opt_h1_be_wk.Description("WEAK");
-        m_opt_h1_be_str.Create(m_cid,"O_HB_2",m_win,-1000,0,95,25); m_opt_h1_be_str.Description("STRONG");
+        m_opt_h1_be_none.Create(m_cid,m_prefix+"O_HB_0",m_win,-1000,0,95,25); m_opt_h1_be_none.Description("NONE");
+        m_opt_h1_be_wk.Create(m_cid,m_prefix+"O_HB_1",m_win,-1000,0,95,25); m_opt_h1_be_wk.Description("WEAK");
+        m_opt_h1_be_str.Create(m_cid,m_prefix+"O_HB_2",m_win,-1000,0,95,25); m_opt_h1_be_str.Description("STRONG");
         
-        m_opt_h1_bu_none.Create(m_cid,"O_HU_0",m_win,-1000,0,95,25); m_opt_h1_bu_none.Description("NONE");
-        m_opt_h1_bu_wk.Create(m_cid,"O_HU_1",m_win,-1000,0,95,25); m_opt_h1_bu_wk.Description("WEAK");
-        m_opt_h1_bu_str.Create(m_cid,"O_HU_2",m_win,-1000,0,95,25); m_opt_h1_bu_str.Description("STRONG");
+        m_opt_h1_bu_none.Create(m_cid,m_prefix+"O_HU_0",m_win,-1000,0,95,25); m_opt_h1_bu_none.Description("NONE");
+        m_opt_h1_bu_wk.Create(m_cid,m_prefix+"O_HU_1",m_win,-1000,0,95,25); m_opt_h1_bu_wk.Description("WEAK");
+        m_opt_h1_bu_str.Create(m_cid,m_prefix+"O_HU_2",m_win,-1000,0,95,25); m_opt_h1_bu_str.Description("STRONG");
 
         UpdateLayout();
     }
@@ -261,34 +263,40 @@ public:
         
         if(id == CHARTEVENT_OBJECT_CLICK) {
             string o = sparam;
-            if(o=="GM") { m_is_minimized=!m_is_minimized; if(m_is_minimized) CloseAll(); UpdateLayout(); return true; }
+            // Check prefix first
+            if(StringFind(o, m_prefix) != 0) return false;
+            
+            // Remove prefix for logic
+            string name_core = StringSubstr(o, StringLen(m_prefix));
+            
+            if(name_core=="GM") { m_is_minimized=!m_is_minimized; if(m_is_minimized) CloseAll(); UpdateLayout(); return true; }
             if(m_is_minimized) return false;
             
             // Toggle Main Buttons
-            if(o=="B_TR_M") { Toggle(1); return false; }
-            if(o=="B_WU_M") { Toggle(2); return false; }
-            if(o=="B_WL_M") { Toggle(3); return false; }
-            if(o=="B_HB_M") { Toggle(4); return false; }
-            if(o=="B_HU_M") { Toggle(5); return false; }
+            if(name_core=="B_TR_M") { Toggle(1); return false; }
+            if(name_core=="B_WU_M") { Toggle(2); return false; }
+            if(name_core=="B_WL_M") { Toggle(3); return false; }
+            if(name_core=="B_HB_M") { Toggle(4); return false; }
+            if(name_core=="B_HU_M") { Toggle(5); return false; }
             
             // Trend Options
-            if(o=="B_TR_1") { m_trend_val=TR_BEARISH; CloseAll(); UpdateLayout(); return true; }
-            if(o=="B_TR_2") { m_trend_val=TR_SIDEWAYS; CloseAll(); UpdateLayout(); return true; }
-            if(o=="B_TR_3") { m_trend_val=TR_BULLISH; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="B_TR_1") { m_trend_val=TR_BEARISH; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="B_TR_2") { m_trend_val=TR_SIDEWAYS; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="B_TR_3") { m_trend_val=TR_BULLISH; CloseAll(); UpdateLayout(); return true; }
             
             // Wick Options
-            if(o=="O_WU_0") { m_w_up_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_WU_1") { m_w_up_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_WL_0") { m_w_lo_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_WL_1") { m_w_lo_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_WU_0") { m_w_up_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_WU_1") { m_w_up_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_WL_0") { m_w_lo_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_WL_1") { m_w_lo_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
 
             // H1 Options
-            if(o=="O_HB_0") { m_h1_bear_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_HB_1") { m_h1_bear_val=STR_WEAK; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_HB_2") { m_h1_bear_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_HU_0") { m_h1_bull_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_HU_1") { m_h1_bull_val=STR_WEAK; CloseAll(); UpdateLayout(); return true; }
-            if(o=="O_HU_2") { m_h1_bull_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HB_0") { m_h1_bear_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HB_1") { m_h1_bear_val=STR_WEAK; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HB_2") { m_h1_bear_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HU_0") { m_h1_bull_val=STR_NONE; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HU_1") { m_h1_bull_val=STR_WEAK; CloseAll(); UpdateLayout(); return true; }
+            if(name_core=="O_HU_2") { m_h1_bull_val=STR_STRONG; CloseAll(); UpdateLayout(); return true; }
             
             CloseAll(); UpdateLayout();
         }

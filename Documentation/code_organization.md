@@ -1,4 +1,4 @@
-# Code Organization (v0.90 Beta)
+# Code Organization (v0.99 Beta)
 
 ## Directory Structure
 
@@ -10,6 +10,11 @@
 ├── `Includes/`
 │   ├── `Fuzzy/`
 │   │   └── `FuzzyAdapter.mqh` (Wraps MQL5 Standard Library for stability)
+│   ├── `Trend/` (NEW)
+│   │   ├── `TrendSystem.mqh` (Interface & Collector architecture)
+│   │   ├── `TrendFuzzyEngine.mqh` (The Brain - Fuzzy Logic for Trend)
+│   │   ├── `ZigZagModule.mqh` (Complex ZigZag Algo -> Normalized Score)
+│   │   └── `RSIModule.mqh` (Indicator Wrapper -> Normalized Score)
 │   ├── `GUI/`
 │   │   ├── `GUIPanel.mqh` (Core UI Rendering)
 │   │   └── `GUIAdapter.mqh` (Maps UI states to Fuzzy values)
@@ -36,7 +41,15 @@
     *   Delegates Event handling to `GUIAdapter`.
     *   Triggers logic calculation without knowing internal Library details.
 
-### 2. Adapters (Isolation Layer)
+### 2. Trend Analysis Subsystem (New - v0.99)
+*   **Philosophy:** Modular Sensor-Brain Architecture.
+*   **`TrendSystem.mqh`**: Defines the `CTrendModule` interface. All indicators must return a normalized score from **-1.0 (Bearish)** to **+1.0 (Bullish)**.
+*   **`TrendFuzzyEngine.mqh`**: "The Brain". Collects normalized inputs from all modules and uses Mamdani Logic to determine the final Trend State (e.g., "Correction Risk", "Strong Trend").
+*   **Modules (Sensors):**
+    *   **`ZigZagModule`**: Encapsulates complex logic (Structure + Efficiency + Timing). It acts as a "Smart Sensor" that processes raw price data internally and outputs a single quality score.
+    *   **`RSIModule`**: Wrapper for standard indicators, normalizing their raw values (0-100) to the standard system range (-1.0 to 1.0).
+
+### 3. Adapters (Isolation Layer)
 *   **`FuzzyAdapter.mqh`**: 
     *   Isolates the complex MQL5 Standard Fuzzy Library.
     *   Manages internal state for crisp values (since `CFuzzyVariable` doesn't).
@@ -45,20 +58,20 @@
     *   Converts human-readable UI states (YES/NO, STRONG/WEAK) into numerical Fuzzy inputs.
     *   Centralizes the "Business Logic" of mapping UI to Logic.
 
-### 3. GUI Module (`GUIPanel.mqh`)
+### 4. GUI Module (`GUIPanel.mqh`)
 *   **Version:** 7.50 (Overlay/Occlusion Mode)
 *   **Features:** Dual Dropdowns, Occlusion logic, Drag & Drop with Anti-Scroll.
 *   **Static Nature:** Uses static `CChartObject` members for maximum stability.
 
-### 4. Fuzzy Core (MQL5 Standard Library)
+### 5. Fuzzy Core (MQL5 Standard Library)
 *   **Path:** `<Math\Fuzzy\mamdanifuzzysystem.mqh>`
 *   **Usage:** Leverages the official MetaQuotes implementation for Mamdani inference.
 
-### 5. Python Digital Twin (`Tests/Python_Fuzzy_Sim/`)
+### 6. Python Digital Twin (`Tests/Python_Fuzzy_Sim/`)
 *   **Role:** Offline verification and visualization.
-*   **`fuzzy_simulator.py`**: A Tkinter/Matplotlib GUI that replicates the MQL5 fuzzy logic. Used to visualize membership functions and rule surfaces without compiling MQL5.
-*   **`test_fuzzy_logic.py`**: Automated unit tests to ensure the logic outputs (Buy/Sell/Neutral) match the `rules.csv` specifications.
+*   **`fuzzy_simulator.py`**: A Tkinter/Matplotlib GUI that replicates the MQL5 fuzzy logic. Used to verify rules visually.
+*   **`test_fuzzy_logic.py`**: Automated unit tests to ensure the logic outputs match specifications.
 
-### 6. Utilities & Config
+### 7. Utilities & Config
 *   **`Definitions.mqh`**: The **Source of Truth** for all strings and numbers. No magic values allowed elsewhere.
 *   **`project_env.json`**: Decouples the source code from the local machine environment.
